@@ -1,9 +1,12 @@
 package com.huyd.views;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -14,6 +17,12 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
+import com.huyd.domain.FirstBean;
+import com.huyd.domain.PointBean;
+import com.huyd.findingfault.GameActivity;
+import com.huyd.util.Circle;
+import com.huyd.util.Point;
+
 /**
  * Author: huyd
  * Date: 2017-07-28
@@ -23,8 +32,34 @@ import android.view.View;
 public class DrawRingImageView extends View {
 
 	private List<MyBean> list = null;
+	private FirstBean firstBean = new FirstBean();
+	Map<String, List<PointBean>> map = new HashMap<String, List<PointBean>>();
+
 	private int MaxAlpha = 255;// 最大透明度
 	private boolean START = true;// 如果不设置这个START进行判断,每次点击屏幕后,屏幕只允许出现一个圆
+
+	private float pointx, pointy;
+
+	private int flag = 0;
+
+	PointBean pointBean = new PointBean();
+	List<PointBean> lists = new ArrayList<PointBean>();
+
+	public Map<String, List<PointBean>> getMap() {
+		return map;
+	}
+
+	public void setMap(Map<String, List<PointBean>> map) {
+		this.map = map;
+	}
+
+	public List<PointBean> getLists() {
+		return lists;
+	}
+
+	public void setLists(List<PointBean> lists) {
+		this.lists = lists;
+	}
 
 	public DrawRingImageView(Context context) {
 		super(context);
@@ -57,35 +92,64 @@ public class DrawRingImageView extends View {
 	public boolean onTouchEvent(MotionEvent event) {
 		super.onTouchEvent(event);
 
+
 		switch (event.getAction()) {
 			case MotionEvent.ACTION_DOWN:
 
+
 				Log.i("position", "X=" + event.getX() + " Y=" + event.getY());
 
-				if (event.getX() > 400 && event.getY() > 400) {
-					// 点击屏幕后 半径设为0,alpha设置为255
-					MyBean bean = new MyBean();
-					bean.radius = 0; // 点击后 半径先设为0
-					bean.alpha = MaxAlpha; // alpha设为最大值 255
-					bean.width = bean.radius / 8; // 描边宽度 这个随意
-					bean.X = (int) event.getX(); // 所绘制的圆的X坐标
-					bean.Y = (int) event.getY(); // 所绘制的圆的Y坐标
-					bean.paint = initPaint(bean.alpha, bean.width);
+				List<PointBean> l = map.get(0);
 
-					if (list.size() == 0) {
-						// 如果不设置这个START进行判断,每次点击屏幕后,屏幕只允许出现一个圆
-						START = true;
-					}
-					list.add(bean);
-					invalidate();
-					if (START) {
-						handler.sendEmptyMessage(0);
+
+				for (int i = 0; i < 2; i++) {
+
+					Log.i("position--", "X=" + event.getX() + " Y=" + event.getY());
+					Circle circle = new Circle(new Point(lists.get(i).getX(), lists.get(i).getY()), 50);
+					Point p = new Point(event.getX(), event.getY());
+
+					if (circle.isInner(p)) {
+//						lists.remove(i);
+						flag = flag + 1;
+						// 点击屏幕后 半径设为0,alpha设置为255
+						MyBean bean = new MyBean();
+						bean.radius = 0; // 点击后 半径先设为0
+						bean.alpha = MaxAlpha; // alpha设为最大值 255
+						bean.width = bean.radius / 8; // 描边宽度 这个随意
+						bean.X = (int) event.getX(); // 所绘制的圆的X坐标
+						bean.Y = (int) event.getY(); // 所绘制的圆的Y坐标
+						bean.paint = initPaint(bean.alpha, bean.width);
+
+						if (list.size() == 0) {
+							// 如果不设置这个START进行判断,每次点击屏幕后,屏幕只允许出现一个圆
+							START = true;
+						}
+						list.add(bean);
+						invalidate();
+						if (START) {
+							handler.sendEmptyMessage(0);
+						}
 					}
 				}
-
-
+				if (flag == 2) {
+					lists.remove(0);
+					lists.remove(1);
+				}
 				break;
 		}
+
+		if (flag == 2) {
+			Intent intent = new Intent("com.example.broadcasttest.MY_BROADCAST");
+			intent.putExtra("flag", String.valueOf(flag));
+			getContext().sendBroadcast(intent);
+			flag = 0;
+		} else {
+			Intent intent = new Intent("com.example.broadcasttest.MY_BROADCAST");
+			intent.putExtra("flag", String.valueOf(flag));
+			getContext().sendBroadcast(intent);
+		}
+
+
 		return true;
 	}
 
@@ -138,16 +202,32 @@ public class DrawRingImageView extends View {
 				START = false;
 			}
 			bean.radius = 70;
-//			bean.radius += 5;// 半径每次+5
-//			bean.alpha -= 10;// 透明度每次减10
-//			if (bean.alpha < 0) {
-//				// 透明度小雨0的时候 赋为0
-//				bean.alpha = 0;
-//			}
+			bean.radius += 5;// 半径每次+5
+			bean.alpha -= 10;// 透明度每次减10
+			if (bean.alpha < 0) {
+				// 透明度小雨0的时候 赋为0
+				bean.alpha = 0;
+			}
 			bean.width = bean.radius / 8; // 描边宽度设置为半径的1/4
 			bean.paint.setAlpha(bean.alpha);
 			bean.paint.setStrokeWidth(bean.width);
 		}
+	}
+
+	public float getPointx() {
+		return pointx;
+	}
+
+	public void setPointx(float pointx) {
+		this.pointx = pointx;
+	}
+
+	public float getPointy() {
+		return pointy;
+	}
+
+	public void setPointy(float pointy) {
+		this.pointy = pointy;
 	}
 
 
