@@ -1,10 +1,16 @@
 package com.huyd.findingfault;
 
+import android.annotation.TargetApi;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.RequiresApi;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -14,6 +20,7 @@ import android.widget.Toast;
 import com.huyd.domain.FirstBean;
 import com.huyd.domain.PointBean;
 import com.huyd.util.CountPointBroadcast;
+import com.huyd.util.ImgData;
 import com.huyd.views.DrawRingImageView;
 import com.huyd.views.MyBean;
 import com.huyd.views.ProgressView;
@@ -26,6 +33,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static android.R.id.text1;
 
 public class GameActivity extends AppCompatActivity implements CountPointBroadcast.Message {
 
@@ -52,6 +61,42 @@ public class GameActivity extends AppCompatActivity implements CountPointBroadca
 		setContentView(R.layout.activity_game);
 
 		initView();
+
+//		if (getSharedPreferences().equals("1"))
+//
+//		try {
+
+
+		if (!getSahrePreference().equals("0")) {
+			String value = ImgData.list.get(0);
+			if (getSahrePreference().equals("1")) {
+				if (value.equals("1")) {
+					ring1.setBackground(this.getResources().getDrawable(R.mipmap.point1_1));
+					ring2.setBackground(this.getResources().getDrawable(R.mipmap.point1_2));
+					ImgData.removeList();
+					removeSharedPreference();
+				} else if (value.equals("2")) {
+					ring1.setBackground(this.getResources().getDrawable(R.mipmap.poing2_1));
+					ring2.setBackground(this.getResources().getDrawable(R.mipmap.poing2_2));
+					ImgData.removeList();
+					removeSharedPreference();
+				} else {
+					ring1.setBackground(this.getResources().getDrawable(R.mipmap.poing2_1));
+					ring2.setBackground(this.getResources().getDrawable(R.mipmap.poing2_2));
+					ImgData.removeList();
+					removeSharedPreference();
+				}
+			} else {
+				ring1.setBackground(this.getResources().getDrawable(R.mipmap.point1_1));
+				ring2.setBackground(this.getResources().getDrawable(R.mipmap.point1_2));
+				ImgData.renewList();
+			}
+
+		}
+//		} catch (Exception e) {
+//
+//		}
+
 
 		List<PointBean> lists = new ArrayList<PointBean>();
 		Map<String, List<PointBean>> map = new HashMap<String, List<PointBean>>();
@@ -145,6 +190,11 @@ public class GameActivity extends AppCompatActivity implements CountPointBroadca
 	private void nextRing() {
 		ring1.setBackground(this.getResources().getDrawable(R.mipmap.poing2_1));
 		ring2.setBackground(this.getResources().getDrawable(R.mipmap.poing2_2));
+//		ring1.setBackgroundResource(R.mipmap.poing2_1);
+//		ring1.setForeground(R.mipmap.poing2_1);
+//		ring1.setImageResource(R.mipmap.poing2_1);
+
+
 		progress.setMaxCount(50);
 		progress.setCurrentCount(0);
 		ring1.postInvalidate();
@@ -192,7 +242,12 @@ public class GameActivity extends AppCompatActivity implements CountPointBroadca
 					break;
 				case NEXT:
 					if (!Thread.currentThread().isInterrupted()) {
+
 						progress.setCurrentCount(iCount);
+						if (iCount == 100) {
+							stopAlert();
+						}
+
 					}
 					break;
 			}
@@ -205,9 +260,87 @@ public class GameActivity extends AppCompatActivity implements CountPointBroadca
 	public void getMsg(String str) {
 		flag = str;
 		if (flag.equals("2")) {
-			Toast.makeText(GameActivity.this, "通关成功", Toast.LENGTH_SHORT).show();
-			nextRing();
-
+//			Toast.makeText(GameActivity.this, "通关成功", Toast.LENGTH_SHORT).show();
+//			nextRing();
+			showAlert();
 		}
+	}
+
+
+	private void showAlert() {
+		new AlertDialog.Builder(this)
+				.setTitle("恭喜你")
+				.setMessage("你已经顺利闯关")
+				.setPositiveButton("下一关", new DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialogInterface, int i) {
+//						new Thread(checkActivation).start();
+						setSharedPreference();
+						Intent intentNext = new Intent(GameActivity.this, GameActivity.class);
+						startActivity(intentNext);
+					}
+				})
+				.setNegativeButton("返回", new DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialogInterface, int i) {
+						setSharedPreferenceMain();
+						Intent intentMain = new Intent(GameActivity.this, MainActivity.class);
+						startActivity(intentMain);
+					}
+				})
+				.show();
+	}
+
+
+	private void stopAlert() {
+		new AlertDialog.Builder(this)
+				.setTitle("时间到")
+				.setMessage("闯关失败")
+				.setNegativeButton("返回", new DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialogInterface, int i) {
+						setSharedPreferenceMain();
+						Intent intentMain = new Intent(GameActivity.this, MainActivity.class);
+						startActivity(intentMain);
+					}
+				})
+				.show();
+	}
+
+
+	public void setSharedPreference() {
+		SharedPreferences sharedPreferences = getSharedPreferences("game", Context.MODE_PRIVATE);
+		SharedPreferences.Editor editor = sharedPreferences.edit();
+		editor.putString("info", "1");
+		editor.commit();// 提交修改
+	}
+
+	public void setSharedPreferenceMain() {
+		SharedPreferences sharedPreferences = getSharedPreferences("game", Context.MODE_PRIVATE);
+		SharedPreferences.Editor editor = sharedPreferences.edit();
+		editor.putString("info", "2");
+		editor.commit();// 提交修改
+	}
+
+
+	// 获得sharedpreferences的数据
+	public String getSahrePreference() {
+		SharedPreferences sharedPreferences = getSharedPreferences("game", Context.MODE_PRIVATE);
+		String info = sharedPreferences.getString("info", "");
+		String str = String.valueOf(info);
+		if (str.length() > 0) {
+			return str;
+		} else {
+			return "0";
+		}
+//		return str;
+	}
+
+	// 清除sharedpreferences的数据
+	public void removeSharedPreference() {
+		SharedPreferences sharedPreferences = getSharedPreferences("game", Context.MODE_PRIVATE);
+		SharedPreferences.Editor editor = sharedPreferences.edit();
+		editor.remove("info");
+		editor.commit();// 提交修改
 	}
 }
