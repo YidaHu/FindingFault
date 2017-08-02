@@ -23,6 +23,7 @@ import android.widget.ImageView;
 import com.huyd.domain.FirstBean;
 import com.huyd.domain.PointBean;
 import com.huyd.findingfault.GameActivity;
+import com.huyd.impl.ClickErrorCallback;
 import com.huyd.util.Circle;
 import com.huyd.util.Point;
 
@@ -34,7 +35,12 @@ import com.huyd.util.Point;
  */
 public class DrawRingImageView extends ImageView {
 
+
+	private int e = 0;
+
 	Canvas canvas;
+
+	private ImageViewListener imageViewListener = null;
 
 	private List<MyBean> list = null;
 	private FirstBean firstBean = new FirstBean();
@@ -65,6 +71,7 @@ public class DrawRingImageView extends ImageView {
 	public void setLists(List<PointBean> lists) {
 		this.lists = lists;
 	}
+
 
 	public DrawRingImageView(Context context) {
 		super(context);
@@ -108,6 +115,30 @@ public class DrawRingImageView extends ImageView {
 //		}
 	}
 
+	//监听改变
+	public void onLinstenerChange(float x, float y) {
+		Circle circle = new Circle(new Point(x, y), 50);
+		Point p = new Point(x, y);
+		MyBean bean = new MyBean();
+		bean.radius = 0; // 点击后 半径先设为0
+		bean.alpha = MaxAlpha; // alpha设为最大值 255
+		bean.width = bean.radius / 8; // 描边宽度 这个随意
+		bean.X = (int) x; // 所绘制的圆的X坐标
+		bean.Y = (int) y; // 所绘制的圆的Y坐标
+		bean.paint = initPaint(bean.alpha, bean.width);
+
+		if (list.size() == 0) {
+			// 如果不设置这个START进行判断,每次点击屏幕后,屏幕只允许出现一个圆
+			START = true;
+		}
+		list.add(bean);
+		invalidate();
+		if (START) {
+			handler.sendEmptyMessage(0);
+		}
+
+	}
+
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
 		super.onTouchEvent(event);
@@ -130,7 +161,7 @@ public class DrawRingImageView extends ImageView {
 						Point p = new Point(event.getX(), event.getY());
 
 						if (circle.isInner(p)) {
-						lists.remove(i);
+							lists.remove(i);
 							flag = flag + 1;
 							// 点击屏幕后 半径设为0,alpha设置为255
 							MyBean bean = new MyBean();
@@ -140,6 +171,10 @@ public class DrawRingImageView extends ImageView {
 							bean.X = (int) event.getX(); // 所绘制的圆的X坐标
 							bean.Y = (int) event.getY(); // 所绘制的圆的Y坐标
 							bean.paint = initPaint(bean.alpha, bean.width);
+
+							if (imageViewListener != null) {
+								imageViewListener.onImageViewChanged(this, (int) event.getX(), (int) event.getY());
+							}
 
 							if (list.size() == 0) {
 								// 如果不设置这个START进行判断,每次点击屏幕后,屏幕只允许出现一个圆
@@ -151,21 +186,33 @@ public class DrawRingImageView extends ImageView {
 								handler.sendEmptyMessage(0);
 							}
 						}
-					}
-				}
 
-				if (flag == 2) {
-					try {
-						if (lists.size() >= 2) {
-							lists.remove(0);
-							lists.remove(1);
+						if (circle.isInner(p)){
+							e =0;
+							break;
+						}else {//点击不在规定范围中
+							e = 2;
+
 						}
-					} catch (Exception e) {
 
 					}
-
-//					drawLine();
+					Intent intent = new Intent("com.example.broadcasttest.ERROR_BROADCAST");
+					intent.putExtra("error", String.valueOf(e));
+					getContext().sendBroadcast(intent);
 				}
+
+//				if (flag == 2) {
+//					try {
+//						if (lists.size() >= 2) {
+//							lists.remove(0);
+//							lists.remove(1);
+//						}
+//					} catch (Exception e) {
+//
+//					}
+//
+////					drawLine();
+//				}
 				break;
 		}
 
@@ -173,9 +220,9 @@ public class DrawRingImageView extends ImageView {
 			Intent intent = new Intent("com.example.broadcasttest.MY_BROADCAST");
 			intent.putExtra("flag", String.valueOf(flag));
 			getContext().sendBroadcast(intent);
-			for (int i = 0; i < list.size(); i++) {
-				list.remove(i);
-			}
+//			for (int i = 0; i < list.size(); i++) {
+//				list.remove(i);
+//			}
 //			clear();
 //			clearHandler.sendEmptyMessage(0);
 //			flag = 0;
@@ -251,7 +298,7 @@ public class DrawRingImageView extends ImageView {
 				START = false;
 			}
 
-			bean.radius = 0;
+			bean.radius = 70;
 //			bean.radius += 5;// 半径每次+5
 //			bean.alpha -= 10;// 透明度每次减10
 //			if (bean.alpha < 0) {
@@ -281,12 +328,9 @@ public class DrawRingImageView extends ImageView {
 			} else if (START == true) {
 				START = false;
 			}
-			bean.radius = 0;
+			bean.radius = 70;
 			dot = dot + 1;
 
-			if (flag == 2) {
-				bean.radius = 0;
-			}
 //			bean.radius += 5;// 半径每次+5
 //			bean.alpha -= 10;// 透明度每次减10
 //			if (bean.alpha < 0) {
@@ -315,5 +359,11 @@ public class DrawRingImageView extends ImageView {
 		this.pointy = pointy;
 	}
 
+	public void setImageViewListener(ImageViewListener imageViewListener) {
+		this.imageViewListener = imageViewListener;
+	}
 
+	public void getFlagData(ClickErrorCallback clickErrorCallback) {
+		clickErrorCallback.getFlag(e);
+	}
 }

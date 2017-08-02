@@ -21,15 +21,18 @@ public class CountPointBroadcast extends BroadcastReceiver {
 	public void onReceive(Context context, Intent intent) {
 
 		flag = intent.getStringExtra("flag");
+
 		//调用Message接口的方法
 		message.getMsg(flag);
+
 
 	}
 
 
-
 	public interface Message {
 		public void getMsg(String str);
+
+		public void getError(String p);
 	}
 
 	public void setMessage(Message message) {

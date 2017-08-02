@@ -19,9 +19,12 @@ import android.widget.Toast;
 
 import com.huyd.domain.FirstBean;
 import com.huyd.domain.PointBean;
+import com.huyd.impl.ClickErrorCallback;
 import com.huyd.util.CountPointBroadcast;
+import com.huyd.util.ErrorPointBroadcast;
 import com.huyd.util.ImgData;
 import com.huyd.views.DrawRingImageView;
+import com.huyd.views.ImageViewListener;
 import com.huyd.views.MyBean;
 import com.huyd.views.ProgressView;
 
@@ -34,24 +37,30 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static android.R.id.progress;
 import static android.R.id.text1;
 
-public class GameActivity extends AppCompatActivity implements CountPointBroadcast.Message {
+public class GameActivity extends AppCompatActivity implements CountPointBroadcast.Message, ImageViewListener, ErrorPointBroadcast.Info {
 
 	protected static final int STOP = 0x10000;
 	protected static final int NEXT = 0x10001;
 	private int iCount = 0;
+	private boolean stopThread = false;
+
+
+	private int errorP = 0;//点错位置的计数
 
 	private List<MyBean> list = null;
 	private boolean START = true;// 如果不设置这个START进行判断,每次点击屏幕后,屏幕只允许出现一个圆
 	MyBean bean = new MyBean();
 
 	CountPointBroadcast countPointBroadcast;
+	ErrorPointBroadcast errorPointBroadcast;
 	String flag = "";
 
 	private ProgressView progress;
 	private DrawRingImageView ring1, ring2;
-	String data = "{\"first\":{\"point\":[{\"x\":\"250\",\"y\":250},{\"x\":\"400\",\"y\":400}]},\"second\":{\"point\":[{\"x\":\"250\",\"y\":250},{\"x\":\"500\",\"y\":500}]}}";
+	String data = "{\"first\":{\"point\":[{\"x\":\"250\",\"y\":250},{\"x\":\"400\",\"y\":400}]},\"second\":{\"point\":[{\"x\":\"600\",\"y\":600},{\"x\":\"500\",\"y\":500}]}}";
 	String[] pointCount = {"first", "second"};
 
 	@RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
@@ -59,6 +68,8 @@ public class GameActivity extends AppCompatActivity implements CountPointBroadca
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_game);
+
+		Log.i("onCreate", "onCreate+++");
 
 		initView();
 
@@ -117,34 +128,6 @@ public class GameActivity extends AppCompatActivity implements CountPointBroadca
 				}
 //				map.put(String.valueOf(i), lists);
 			}
-
-//			ring1.setMap(map);
-
-
-//			JSONObject response = dataJson.getJSONObject(pointCount[0]);
-//			JSONArray data = response.getJSONArray("point");
-//			JSONObject info = data.getJSONObject(0);
-//			String x = info.getString("x");
-//			String y = info.getString("y");
-//
-//			JSONObject info1 = data.getJSONObject(1);
-//			String x1 = info1.getString("x");
-//			String y1 = info1.getString("y");
-//
-//			FirstBean firstBean = new FirstBean();
-//			PointBean pointBean = new PointBean();
-//			Map<String, FirstBean> map1 = new HashMap<String, FirstBean>();
-//
-//
-//			lists.add(new PointBean(Float.parseFloat(x), Float.parseFloat(y)));
-//			lists.add(new PointBean(Float.parseFloat(x1), Float.parseFloat(y1)));
-//
-//
-//			firstBean.setPoint(lists);
-//
-//			map1.put("first", firstBean);
-//
-//			ring1.setFirstBean(firstBean);
 //
 			ring1.setLists(lists);
 
@@ -171,6 +154,25 @@ public class GameActivity extends AppCompatActivity implements CountPointBroadca
 		countPointBroadcast.setMessage(this);
 
 
+		errorPointBroadcast = new ErrorPointBroadcast();
+		IntentFilter intentFilter1 = new IntentFilter();
+		intentFilter1.addAction("com.example.broadcasttest.ERROR_BROADCAST");
+		registerReceiver(errorPointBroadcast, intentFilter1);
+
+		//因为这里需要注入Message，所以不能在AndroidManifest文件中静态注册广播接收器
+		errorPointBroadcast.setInfo(this);
+
+		DrawRingImageView error = new DrawRingImageView(this);
+
+		error.getFlagData(new ClickErrorCallback() {
+			@Override
+			public void getFlag(int p) {
+
+
+			}
+		});
+
+
 	}
 
 	@RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
@@ -178,43 +180,42 @@ public class GameActivity extends AppCompatActivity implements CountPointBroadca
 
 		progress = (ProgressView) findViewById(R.id.progress);
 		progress.setMaxCount(100);
-		mThread.start();
+		new Thread(runnable).start();
 //		new Thread(progressRunable).start();
 //		progress.setCurrentCount(55);
 //		nextRing();
 		ring1 = (DrawRingImageView) findViewById(R.id.ring1);
 		ring2 = (DrawRingImageView) findViewById(R.id.ring2);
+
 	}
 
 	@RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
 	private void nextRing() {
 		ring1.setBackground(this.getResources().getDrawable(R.mipmap.poing2_1));
 		ring2.setBackground(this.getResources().getDrawable(R.mipmap.poing2_2));
-//		ring1.setBackgroundResource(R.mipmap.poing2_1);
-//		ring1.setForeground(R.mipmap.poing2_1);
-//		ring1.setImageResource(R.mipmap.poing2_1);
 
-
-		progress.setMaxCount(50);
 		progress.setCurrentCount(0);
 		ring1.postInvalidate();
-//		mThread.destroy();
-//		mThread.start();
 
 
 	}
 
-
+	int i = 1;
 	//创建一个线程,每秒步长为5增加,到100%时停止
-	Thread mThread = new Thread(new Runnable() {
+//	Thread mThread = new Thread(runnable);
+	Runnable runnable = new Runnable() {
+
 
 		public void run() {
 
-			for (int i = 0; i < 20; i++) {
+
+			while (!stopThread && i <= 20) {
+
 				try {
 					iCount = (i + 1) * 5;
+					Log.i("stopThread", stopThread + " ----" + i);
 					Thread.sleep(1000);
-					if (i == 19) {
+					if (i == 20) {
 						Message msg = new Message();
 						msg.what = STOP;
 						mHandler.sendMessage(msg);
@@ -224,13 +225,17 @@ public class GameActivity extends AppCompatActivity implements CountPointBroadca
 						msg.what = NEXT;
 						mHandler.sendMessage(msg);
 					}
+					i++;
+
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
+
 			}
 
+
 		}
-	});
+	};
 
 	//定义一个Handler
 	private Handler mHandler = new Handler() {
@@ -239,12 +244,15 @@ public class GameActivity extends AppCompatActivity implements CountPointBroadca
 				case STOP:
 //					progress.setVisibility(View.GONE);
 					Thread.currentThread().interrupt();
+					progress.setCurrentCount(iCount);
+					stopAlert();
 					break;
 				case NEXT:
+					progress.setCurrentCount(iCount);
 					if (!Thread.currentThread().isInterrupted()) {
 
 						progress.setCurrentCount(iCount);
-						if (iCount == 100) {
+						if (iCount == progress.getMaxCount()) {
 							stopAlert();
 						}
 
@@ -262,10 +270,17 @@ public class GameActivity extends AppCompatActivity implements CountPointBroadca
 		if (flag.equals("2")) {
 //			Toast.makeText(GameActivity.this, "通关成功", Toast.LENGTH_SHORT).show();
 //			nextRing();
+			stopThread = true;
 			showAlert();
 		}
 	}
 
+	@Override
+	public void getError(String p) {
+		errorP = Integer.parseInt(p);
+		i = i + errorP;
+		Log.i("errorP", errorP + "---------");
+	}
 
 	private void showAlert() {
 		new AlertDialog.Builder(this)
@@ -276,6 +291,7 @@ public class GameActivity extends AppCompatActivity implements CountPointBroadca
 					public void onClick(DialogInterface dialogInterface, int i) {
 //						new Thread(checkActivation).start();
 						setSharedPreference();
+						stopThread = true;
 						Intent intentNext = new Intent(GameActivity.this, GameActivity.class);
 						startActivity(intentNext);
 					}
@@ -284,6 +300,7 @@ public class GameActivity extends AppCompatActivity implements CountPointBroadca
 					@Override
 					public void onClick(DialogInterface dialogInterface, int i) {
 						setSharedPreferenceMain();
+						stopThread = true;
 						Intent intentMain = new Intent(GameActivity.this, MainActivity.class);
 						startActivity(intentMain);
 					}
@@ -342,5 +359,33 @@ public class GameActivity extends AppCompatActivity implements CountPointBroadca
 		SharedPreferences.Editor editor = sharedPreferences.edit();
 		editor.remove("info");
 		editor.commit();// 提交修改
+	}
+
+	@Override
+	public void onImageViewChanged(DrawRingImageView imageView, int x, int y) {
+		if (imageView == ring1) {
+			ring2.onLinstenerChange(x, y);
+		} else if (imageView == ring2) {
+			ring1.onLinstenerChange(x, y);
+		}
+	}
+
+	@Override
+	protected void onPause() {
+		super.onPause();
+//		mHandler.removeCallbacks(mThread);
+
+	}
+
+	private Handler handler = new Handler();
+
+	@Override
+	protected void onDestroy() {
+//		handler.removeCallbacks(runnable);
+
+		stopThread = true;
+		Log.i("onDestroy", stopThread + " ----");
+		super.onDestroy();
+
 	}
 }

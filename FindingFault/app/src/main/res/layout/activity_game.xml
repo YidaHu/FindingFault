@@ -24,11 +24,11 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
 
+
             android:layout_gravity="center_horizontal"/>
 
 
     </LinearLayout>
-
 
 
     <LinearLayout
@@ -43,6 +43,7 @@
             android:layout_width="253dp"
             android:layout_height="match_parent"
             android:background="@mipmap/point1_1"
+            android:duplicateParentState="true"
             app:srcCompat="@mipmap/point1_1"/>
 
         <android.support.v4.widget.Space
@@ -54,6 +55,7 @@
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:background="@mipmap/point1_2"
+            android:duplicateParentState="true"
             app:srcCompat="@mipmap/point1_2"/>
     </LinearLayout>
 </RelativeLayout>
