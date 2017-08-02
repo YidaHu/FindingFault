@@ -23,6 +23,7 @@ import com.huyd.impl.ClickErrorCallback;
 import com.huyd.util.CountPointBroadcast;
 import com.huyd.util.ErrorPointBroadcast;
 import com.huyd.util.ImgData;
+import com.huyd.util.SendRingPointBroadcast;
 import com.huyd.views.DrawRingImageView;
 import com.huyd.views.ImageViewListener;
 import com.huyd.views.MyBean;
@@ -40,12 +41,16 @@ import java.util.Map;
 import static android.R.id.progress;
 import static android.R.id.text1;
 
-public class GameActivity extends AppCompatActivity implements CountPointBroadcast.Message, ImageViewListener, ErrorPointBroadcast.Info {
+public class GameActivity extends AppCompatActivity implements CountPointBroadcast.Message, ImageViewListener, ErrorPointBroadcast.Info, SendRingPointBroadcast.PointMessage {
 
 	protected static final int STOP = 0x10000;
 	protected static final int NEXT = 0x10001;
 	private int iCount = 0;
 	private boolean stopThread = false;
+
+	float px = 0, py = 0;
+
+	List<PointBean> lists = new ArrayList<PointBean>();
 
 
 	private int errorP = 0;//点错位置的计数
@@ -56,11 +61,12 @@ public class GameActivity extends AppCompatActivity implements CountPointBroadca
 
 	CountPointBroadcast countPointBroadcast;
 	ErrorPointBroadcast errorPointBroadcast;
+	SendRingPointBroadcast sendRingPointBroadcast;
 	String flag = "";
 
 	private ProgressView progress;
 	private DrawRingImageView ring1, ring2;
-	String data = "{\"first\":{\"point\":[{\"x\":\"250\",\"y\":250},{\"x\":\"400\",\"y\":400}]},\"second\":{\"point\":[{\"x\":\"600\",\"y\":600},{\"x\":\"500\",\"y\":500}]}}";
+	String data = "{\"first\":{\"point\":[{\"x\":\"250\",\"y\":250},{\"x\":\"400\",\"y\":400}]},\"second\":{\"point\":[{\"x\":\"250\",\"y\":250},{\"x\":\"500\",\"y\":550}]}}";
 	String[] pointCount = {"first", "second"};
 
 	@RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
@@ -77,39 +83,6 @@ public class GameActivity extends AppCompatActivity implements CountPointBroadca
 //
 //		try {
 
-
-		if (!getSahrePreference().equals("0")) {
-			String value = ImgData.list.get(0);
-			if (getSahrePreference().equals("1")) {
-				if (value.equals("1")) {
-					ring1.setBackground(this.getResources().getDrawable(R.mipmap.point1_1));
-					ring2.setBackground(this.getResources().getDrawable(R.mipmap.point1_2));
-					ImgData.removeList();
-					removeSharedPreference();
-				} else if (value.equals("2")) {
-					ring1.setBackground(this.getResources().getDrawable(R.mipmap.poing2_1));
-					ring2.setBackground(this.getResources().getDrawable(R.mipmap.poing2_2));
-					ImgData.removeList();
-					removeSharedPreference();
-				} else {
-					ring1.setBackground(this.getResources().getDrawable(R.mipmap.poing2_1));
-					ring2.setBackground(this.getResources().getDrawable(R.mipmap.poing2_2));
-					ImgData.removeList();
-					removeSharedPreference();
-				}
-			} else {
-				ring1.setBackground(this.getResources().getDrawable(R.mipmap.point1_1));
-				ring2.setBackground(this.getResources().getDrawable(R.mipmap.point1_2));
-				ImgData.renewList();
-			}
-
-		}
-//		} catch (Exception e) {
-//
-//		}
-
-
-		List<PointBean> lists = new ArrayList<PointBean>();
 		Map<String, List<PointBean>> map = new HashMap<String, List<PointBean>>();
 
 		//解析JSON数据,并存入Map
@@ -124,15 +97,22 @@ public class GameActivity extends AppCompatActivity implements CountPointBroadca
 					JSONObject info = data.getJSONObject(j);
 					String x = info.getString("x");
 					String y = info.getString("y");
-					lists.add(new PointBean(Float.parseFloat(x), Float.parseFloat(y)));
+					Log.i("testtest", x + " " + y);
+//					lists.add(new PointBean(Float.parseFloat(x), Float.parseFloat(y)));
 				}
 //				map.put(String.valueOf(i), lists);
 			}
-//
+			Log.i("qqqqqqqqqqqq", "json");
+
+			lists.add(new PointBean(250, 250));
+			lists.add(new PointBean(400, 400));
 			ring1.setLists(lists);
+			ring2.setLists(lists);
+//
+//			ring1.setLists(lists);
 
 			Log.i("jsoninfo = ", lists.get(0).getX() + " " + lists.get(1).getX());
-			Log.i("jsoninfo == ", lists.get(2).getX() + " " + lists.get(3).getX());
+//			Log.i("jsoninfo == ", lists.get(2).getX() + " " + lists.get(3).getX());
 
 
 //			System.out.println(province+city+district+address);
@@ -140,6 +120,55 @@ public class GameActivity extends AppCompatActivity implements CountPointBroadca
 		} catch (JSONException e) {
 			e.printStackTrace();
 		}
+
+
+		if (!getSahrePreference().equals("0")) {
+			String value = ImgData.list.get(0);
+			if (getSahrePreference().equals("1")) {
+				if (value.equals("1")) {
+					ring1.setBackground(this.getResources().getDrawable(R.mipmap.point1_1));
+					ring2.setBackground(this.getResources().getDrawable(R.mipmap.point1_2));
+					lists.add(new PointBean(250, 250));
+					lists.add(new PointBean(400, 400));
+					ring1.setLists(lists);
+					ring2.setLists(lists);
+					ImgData.removeList();
+					removeSharedPreference();
+				} else if (value.equals("2")) {
+					Log.i("qqqqqqqqqqqq", "2");
+					ring1.setBackground(this.getResources().getDrawable(R.mipmap.poing2_1));
+					ring2.setBackground(this.getResources().getDrawable(R.mipmap.poing2_2));
+					lists.clear();
+					lists.add(new PointBean(250, 250));
+					lists.add(new PointBean(500, 550));
+					ring1.setLists(lists);
+					ring2.setLists(lists);
+					ImgData.removeList();
+					removeSharedPreference();
+				} else {
+					ring1.setBackground(this.getResources().getDrawable(R.mipmap.poing2_1));
+					ring2.setBackground(this.getResources().getDrawable(R.mipmap.poing2_2));
+					lists.clear();
+					lists.add(new PointBean(250, 250));
+					lists.add(new PointBean(500, 550));
+					ring1.setLists(lists);
+					ImgData.removeList();
+					removeSharedPreference();
+				}
+			} else {
+				ring1.setBackground(this.getResources().getDrawable(R.mipmap.point1_1));
+				ring2.setBackground(this.getResources().getDrawable(R.mipmap.point1_2));
+				lists.add(new PointBean(250, 250));
+				lists.add(new PointBean(400, 400));
+				ring1.setLists(lists);
+				ring2.setLists(lists);
+				ImgData.renewList();
+			}
+
+		}
+//		} catch (Exception e) {
+//
+//		}
 
 
 //		initView();
@@ -162,6 +191,15 @@ public class GameActivity extends AppCompatActivity implements CountPointBroadca
 		//因为这里需要注入Message，所以不能在AndroidManifest文件中静态注册广播接收器
 		errorPointBroadcast.setInfo(this);
 
+
+		sendRingPointBroadcast = new SendRingPointBroadcast();
+		IntentFilter intentFilter2 = new IntentFilter();
+		intentFilter2.addAction("com.example.broadcasttest.POINT_BROADCAST");
+		registerReceiver(sendRingPointBroadcast, intentFilter2);
+
+		//因为这里需要注入Message，所以不能在AndroidManifest文件中静态注册广播接收器
+		sendRingPointBroadcast.setPoint(this);
+
 		DrawRingImageView error = new DrawRingImageView(this);
 
 		error.getFlagData(new ClickErrorCallback() {
@@ -182,10 +220,11 @@ public class GameActivity extends AppCompatActivity implements CountPointBroadca
 		progress.setMaxCount(100);
 		new Thread(runnable).start();
 //		new Thread(progressRunable).start();
-//		progress.setCurrentCount(55);
+		progress.setCurrentCount(100);
 //		nextRing();
 		ring1 = (DrawRingImageView) findViewById(R.id.ring1);
 		ring2 = (DrawRingImageView) findViewById(R.id.ring2);
+//		ring2.onLinstenerChange(200, 200);
 
 	}
 
@@ -194,28 +233,29 @@ public class GameActivity extends AppCompatActivity implements CountPointBroadca
 		ring1.setBackground(this.getResources().getDrawable(R.mipmap.poing2_1));
 		ring2.setBackground(this.getResources().getDrawable(R.mipmap.poing2_2));
 
-		progress.setCurrentCount(0);
+		progress.setCurrentCount(100);
 		ring1.postInvalidate();
+		//---------------
+		ring2.postInvalidate();
 
 
 	}
 
-	int i = 1;
+	int i = 100;
 	//创建一个线程,每秒步长为5增加,到100%时停止
 //	Thread mThread = new Thread(runnable);
 	Runnable runnable = new Runnable() {
 
 
-		public void run() {
+		public synchronized void run() {
 
 
-			while (!stopThread && i <= 20) {
+			while (!stopThread && i >= 0) {
 
 				try {
-					iCount = (i + 1) * 5;
+					iCount = (i - 1) * 1;
 					Log.i("stopThread", stopThread + " ----" + i);
-					Thread.sleep(1000);
-					if (i == 20) {
+					if (i == 0) {
 						Message msg = new Message();
 						msg.what = STOP;
 						mHandler.sendMessage(msg);
@@ -225,7 +265,8 @@ public class GameActivity extends AppCompatActivity implements CountPointBroadca
 						msg.what = NEXT;
 						mHandler.sendMessage(msg);
 					}
-					i++;
+					Thread.sleep(500);
+					i--;
 
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -244,7 +285,9 @@ public class GameActivity extends AppCompatActivity implements CountPointBroadca
 				case STOP:
 //					progress.setVisibility(View.GONE);
 					Thread.currentThread().interrupt();
+					stopThread = true;
 					progress.setCurrentCount(iCount);
+
 					stopAlert();
 					break;
 				case NEXT:
@@ -252,7 +295,9 @@ public class GameActivity extends AppCompatActivity implements CountPointBroadca
 					if (!Thread.currentThread().isInterrupted()) {
 
 						progress.setCurrentCount(iCount);
-						if (iCount == progress.getMaxCount()) {
+						if (iCount <= 10) {
+							stopThread = true;
+							progress.setCurrentCount(0);
 							stopAlert();
 						}
 
@@ -278,8 +323,12 @@ public class GameActivity extends AppCompatActivity implements CountPointBroadca
 	@Override
 	public void getError(String p) {
 		errorP = Integer.parseInt(p);
-		i = i + errorP;
+		if ((i - errorP) > 1) {
+			i = i - errorP;
+		}
+
 		Log.i("errorP", errorP + "---------");
+		Log.i("stopThread", errorP + "++++++++");
 	}
 
 	private void showAlert() {
@@ -304,7 +353,7 @@ public class GameActivity extends AppCompatActivity implements CountPointBroadca
 						Intent intentMain = new Intent(GameActivity.this, MainActivity.class);
 						startActivity(intentMain);
 					}
-				})
+				}).setCancelable(false)
 				.show();
 	}
 
@@ -320,7 +369,7 @@ public class GameActivity extends AppCompatActivity implements CountPointBroadca
 						Intent intentMain = new Intent(GameActivity.this, MainActivity.class);
 						startActivity(intentMain);
 					}
-				})
+				}).setCancelable(false)
 				.show();
 	}
 
@@ -386,6 +435,21 @@ public class GameActivity extends AppCompatActivity implements CountPointBroadca
 		stopThread = true;
 		Log.i("onDestroy", stopThread + " ----");
 		super.onDestroy();
+
+	}
+
+	@Override
+	public void getPoint(String point) {
+		String str = point;
+		String[] s = str.split("\\&");
+		Log.i("point", str);
+		if (s[0].equals("yes")) {
+			px = Float.parseFloat(s[1]);
+			py = Float.parseFloat(s[2]);
+			Log.i("point", px + " " + py);
+			ring2.onLinstenerChange(px, py);
+			ring1.onLinstenerChange(px, py);
+		}
 
 	}
 }

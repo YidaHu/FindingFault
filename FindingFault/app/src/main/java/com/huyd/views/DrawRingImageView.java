@@ -34,6 +34,7 @@ import com.huyd.util.Point;
  * Describe:自定义View.绘制圆环
  */
 public class DrawRingImageView extends ImageView {
+	private final static String LAG = "DrawRingImageView";
 
 
 	private int e = 0;
@@ -94,6 +95,7 @@ public class DrawRingImageView extends ImageView {
 
 	@Override
 	protected void onDraw(Canvas canvas) {
+		Log.i(LAG, "onDraw");
 		this.canvas = canvas;
 
 //		Paint paint = new Paint();
@@ -117,6 +119,7 @@ public class DrawRingImageView extends ImageView {
 
 	//监听改变
 	public void onLinstenerChange(float x, float y) {
+		Log.i(LAG, "onLinstenerChange");
 		Circle circle = new Circle(new Point(x, y), 50);
 		Point p = new Point(x, y);
 		MyBean bean = new MyBean();
@@ -146,31 +149,46 @@ public class DrawRingImageView extends ImageView {
 
 		switch (event.getAction()) {
 			case MotionEvent.ACTION_DOWN:
+				Log.i("lists+++=", String.valueOf(lists.size()));
 
 
-				Log.i("position", "X=" + event.getX() + " Y=" + event.getY());
+//				Log.i("position+++", "X=" + event.getX() + " Y=" + event.getY());
+//				Log.i("position+++", "X==" + lists.get(i).getX() + " Y==" + lists.get(i).getY());
 
-				List<PointBean> l = map.get(0);
 
-
-				if (lists.size() >= 2) {
+				if (lists.size() > 0) {
 					for (int i = 0; i < 2; i++) {
 
-						Log.i("position--", "X=" + event.getX() + " Y=" + event.getY());
-						Circle circle = new Circle(new Point(lists.get(i).getX(), lists.get(i).getY()), 50);
+						Log.i("position+++---", "X=" + event.getX() + " Y=" + event.getY());
+						Log.i("position+++", "X==" + lists.get(i).getX() + " Y==" + lists.get(i).getY());
+
+						Circle circle = new Circle(new Point(lists.get(i).getX(), lists.get(i).getY()), 100);
 						Point p = new Point(event.getX(), event.getY());
 
+
 						if (circle.isInner(p)) {
-							lists.remove(i);
+//							Point p = new Point(lists.get(i).getX(), lists.get(i).getY());
+
+							Intent intent = new Intent("com.example.broadcasttest.POINT_BROADCAST");
+							String point = "yes" + "&" + lists.get(i).getX() + "&" + lists.get(i).getY();
+							intent.putExtra("point", point);
+							getContext().sendBroadcast(intent);
+
+//							lists.remove(i);
 							flag = flag + 1;
 							// 点击屏幕后 半径设为0,alpha设置为255
 							MyBean bean = new MyBean();
 							bean.radius = 0; // 点击后 半径先设为0
 							bean.alpha = MaxAlpha; // alpha设为最大值 255
 							bean.width = bean.radius / 8; // 描边宽度 这个随意
-							bean.X = (int) event.getX(); // 所绘制的圆的X坐标
-							bean.Y = (int) event.getY(); // 所绘制的圆的Y坐标
+							bean.X = (int) lists.get(i).getX(); // 所绘制的圆的X坐标
+							bean.Y = (int) lists.get(i).getY(); // 所绘制的圆的Y坐标
 							bean.paint = initPaint(bean.alpha, bean.width);
+
+							lists.get(i).setX(999);
+							lists.get(i).setY(999);
+//							lists.remove()
+
 
 							if (imageViewListener != null) {
 								imageViewListener.onImageViewChanged(this, (int) event.getX(), (int) event.getY());
@@ -183,36 +201,27 @@ public class DrawRingImageView extends ImageView {
 							list.add(bean);
 							invalidate();
 							if (START) {
-								handler.sendEmptyMessage(0);
+								handler.sendEmptyMessage(50);
 							}
 						}
+//						lists.remove(i);
 
-						if (circle.isInner(p)){
-							e =0;
+						if (circle.isInner(p)) {
+							e = 0;
 							break;
-						}else {//点击不在规定范围中
-							e = 2;
+						} else {//点击不在规定范围中
+							e = 1;
 
 						}
 
 					}
-					Intent intent = new Intent("com.example.broadcasttest.ERROR_BROADCAST");
-					intent.putExtra("error", String.valueOf(e));
-					getContext().sendBroadcast(intent);
+
+
+
+
 				}
 
-//				if (flag == 2) {
-//					try {
-//						if (lists.size() >= 2) {
-//							lists.remove(0);
-//							lists.remove(1);
-//						}
-//					} catch (Exception e) {
-//
-//					}
-//
-////					drawLine();
-//				}
+
 				break;
 		}
 
@@ -220,6 +229,7 @@ public class DrawRingImageView extends ImageView {
 			Intent intent = new Intent("com.example.broadcasttest.MY_BROADCAST");
 			intent.putExtra("flag", String.valueOf(flag));
 			getContext().sendBroadcast(intent);
+			lists.clear();
 //			for (int i = 0; i < list.size(); i++) {
 //				list.remove(i);
 //			}
@@ -232,6 +242,9 @@ public class DrawRingImageView extends ImageView {
 			getContext().sendBroadcast(intent);
 		}
 
+		Intent intent = new Intent("com.example.broadcasttest.ERROR_BROADCAST");
+		intent.putExtra("error", String.valueOf(e));
+		getContext().sendBroadcast(intent);
 
 		return true;
 	}
@@ -240,6 +253,7 @@ public class DrawRingImageView extends ImageView {
 	 * 初始化paint
 	 */
 	public Paint initPaint(int alpha, float width) {
+		Log.i(LAG, "initPaint");
 		Paint paint = new Paint();
 		paint.setAntiAlias(true);// 抗锯齿
 		paint.setStrokeWidth(width);// 描边宽度
@@ -270,54 +284,12 @@ public class DrawRingImageView extends ImageView {
 
 	};
 
-	Handler clearHandler = new Handler() {
-		@Override
-		public void handleMessage(Message msg) {
-			super.handleMessage(msg);
-			switch (msg.what) {
-				case 0:
-					invalidate();
-					if (list != null && list.size() > 0) {
-						handler.sendEmptyMessageDelayed(0, 50);// 每50毫秒发送
-					}
-					break;
-			}
-		}
-	};
-
-
-	private void clear() {
-		for (int i = 0; i < list.size(); i++) {
-			MyBean bean = list.get(i);
-			if (START == false && bean.alpha == 0) {
-				list.remove(i);
-				bean.paint = null;
-				bean = null;
-				continue;
-			} else if (START == true) {
-				START = false;
-			}
-
-			bean.radius = 70;
-//			bean.radius += 5;// 半径每次+5
-//			bean.alpha -= 10;// 透明度每次减10
-//			if (bean.alpha < 0) {
-//				// 透明度小雨0的时候 赋为0
-			bean.alpha = 0;
-//			}
-			bean.width = bean.radius / 8; // 描边宽度设置为半径的1/4
-			bean.paint.setAlpha(bean.alpha);
-			bean.paint.setStrokeWidth(bean.width);
-		}
-		invalidate();
-	}
-
-	int dot = 0;
 
 	/***
 	 * 刷新
 	 */
 	private void Refresh() {
+		Log.i(LAG, "Refresh");
 		for (int i = 0; i < list.size(); i++) {
 			MyBean bean = list.get(i);
 			if (START == false && bean.alpha == 0) {
@@ -329,7 +301,6 @@ public class DrawRingImageView extends ImageView {
 				START = false;
 			}
 			bean.radius = 70;
-			dot = dot + 1;
 
 //			bean.radius += 5;// 半径每次+5
 //			bean.alpha -= 10;// 透明度每次减10
@@ -364,6 +335,7 @@ public class DrawRingImageView extends ImageView {
 	}
 
 	public void getFlagData(ClickErrorCallback clickErrorCallback) {
+		Log.i(LAG, "getFlagData");
 		clickErrorCallback.getFlag(e);
 	}
 }

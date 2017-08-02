@@ -23,7 +23,7 @@ public class ProgressView extends View {
 	/**
 	 * 分段颜色
 	 */
-	private static final int[] SECTION_COLORS = {Color.GREEN, Color.YELLOW, Color.RED};
+	private static final int[] SECTION_COLORS = {Color.RED, Color.YELLOW, Color.GREEN};
 	/**
 	 * 进度条最大值
 	 */
